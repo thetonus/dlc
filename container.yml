@@ -1,11 +1,19 @@
-gpu: true
-workdir: /opt/app
+project_name: receipt-ocr
+cuda:
+  enabled: true
+  version: 11.8.0
+system_packages:
+  - ca-certificates
+  - ffmpeg
 src:
   - test_data
+  - resources
+  - app
 python:
-  version: "3.10"
-  project_type: poetry
-  project_source:
-    - pyproject.toml
-    - poetry.lock
+  version: 3.10.11
+  # poetry:
+    # version: 1.5.0
+  config_source:
+  - pyproject.toml
+  - poetry.lock
 

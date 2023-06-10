@@ -12,8 +12,11 @@ mod: ## Go mod things
 	go mod vendor
 	go mod download
 
-build: ## Build app
+build: clean ## Build app
 	CGO=0 go build -o dist/${BINARY_NAME} cmd/main.go
 
 clean: ## Clean stuff
 	rm -rf dist/*
+
+format: ## Format
+	go fmt ./...
