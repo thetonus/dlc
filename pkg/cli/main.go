@@ -1,11 +1,15 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
+
+func init() {
+	zap.ReplaceGlobals(zap.Must(zap.NewDevelopment()))
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "dlc",
@@ -17,7 +21,7 @@ func Execute() {
 	rootCmd.AddCommand(BuildCmd())
 	rootCmd.AddCommand(ShowCmd())
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		zap.L().Error("Error executing command", zap.Error(err))
 		os.Exit(1)
 	}
 }

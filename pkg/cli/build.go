@@ -1,19 +1,16 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 
-	// "github.com/hammacktony/dlc/pkg/container"
 	"github.com/hammacktony/dlc/pkg/dockerfile"
-	// "github.com/hammacktony/dlc/pkg/fileutils"
 	"github.com/hammacktony/dlc/pkg/spec"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 func BuildCmd() *cobra.Command {
 	var exportFile string
-	var showConfig bool
 
 	cmd := &cobra.Command{
 		Use:   "build",
@@ -22,24 +19,23 @@ func BuildCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			containerSpec, err := spec.LoadConfig(args[0])
 			if err != nil {
-				fmt.Println(err)
+				zap.L().Error("failed to load container spec", zap.Error(err))
 				os.Exit(1)
 			}
 
 			content, err := dockerfile.Create(containerSpec)
 			if err != nil {
-				fmt.Println(err)
+				zap.L().Error("failed to generate dockerfile", zap.Error(err))
 				os.Exit(1)
 			}
 
 			if err := dockerfile.WriteFile(exportFile, content); err != nil {
-				fmt.Println(err)
+				zap.L().Error("failed to export dockerfile", zap.Error(err))
 				os.Exit(1)
 			}
 		},
 	}
 
-	cmd.Flags().BoolVar(&showConfig, "show", false, "Show the config file")
 	cmd.Flags().StringVar(&exportFile, "export", "", "File to export dockerfile to")
 	return cmd
 }

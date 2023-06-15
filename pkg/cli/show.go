@@ -1,13 +1,13 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/goccy/go-yaml"
 	"github.com/hammacktony/dlc/pkg/fileutils"
 	"github.com/hammacktony/dlc/pkg/spec"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 func ShowCmd() *cobra.Command {
@@ -18,18 +18,18 @@ func ShowCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			config, err := spec.LoadConfig(args[0])
 			if err != nil {
-				fmt.Println(err)
+				zap.L().Error("failed to load config", zap.Error(err))
 				os.Exit(1)
 			}
 
 			content, err := yaml.Marshal(config)
 			if err != nil {
-				fmt.Println(err)
+				zap.L().Error("failed to marshal config", zap.Error(err))
 				os.Exit(1)
 			}
 
 			if err := fileutils.WriteFile(os.Stdout, content); err != nil {
-				fmt.Println(err)
+				zap.L().Error("failed to write config", zap.Error(err))
 				os.Exit(1)
 			}
 		},
