@@ -1,7 +1,7 @@
 ##################
 # Mamba Layer
 ##################
-FROM ubuntu:22.04 as mambaforge
+FROM ubuntu:{{ .System.UbuntuVersion }} as mambaforge
 ARG MAMBA_VERSION=23.1.0-1
 
 RUN set -ex && \
@@ -17,16 +17,23 @@ RUN set -ex && \
   curl \
   ca-certificates \
   && rm -rf /var/lib/apt/lists/* \
-  && curl -sSL -o /tmp/mambaforge.sh https://github.com/conda-forge/miniforge/releases/download/${MAMBA_VERSION}/Mambaforge-${MAMBA_VERSION}-Linux-x86_64.sh \
+  && curl -sSL -o /tmp/mambaforge.sh https://github.com/conda-forge/miniforge/releases/download/{{ .System.MambaVersion }}/Mambaforge-${MAMBA_VERSION}-Linux-x86_64.sh \
   && chmod +x /tmp/mambaforge.sh
 # Install conda
 RUN /tmp/mambaforge.sh -b -p /opt/conda
 
+{{if .Cuda.Enabled -}}
 ##################
 # Base Layer - GPU
 ##################
-FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04 as base
-
+FROM nvidia/cuda:{{.Cuda.Version}}-runtime-ubuntu{{ .System.UbuntuVersion }} as base
+{{else -}}
+# CPU Base
+##################
+# Base Layer - CPU
+##################
+FROM ubuntu:{{ .System.UbuntuVersion }} as base
+{{end}}
 
 # Set Env Variables for the images
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -43,7 +50,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN set -ex && \
   apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates \
+  {{ if gt (len .System.Packages) 0 }}
+  && apt-get install -y --no-install-recommends \
+    {{ range .System.Packages -}}
+    {{- . }} \
+    {{ end  -}}
+  {{ end }}
   && rm -rf /var/lib/apt/lists/*
 
 # Grab Conda
@@ -55,7 +67,7 @@ RUN ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh \
   && echo ". /opt/conda/etc/profile.d/conda.sh; conda activate base" >> ~/.bashrc# Install Python and base dependencies
 
 # Install Python and base dependencies
-RUN mamba install -y -n base -c conda-forge python=3.10.11 \
+RUN mamba install -y -n base -c conda-forge python={{ .Python.Version }} \
   cython \
   typing \
   libgcc \
@@ -68,16 +80,17 @@ RUN mamba install -y -n base -c conda-forge python=3.10.11 \
   # Clean conda dependencies
   && mamba clean -ya
 
+{{ if .Python.Poetry  -}}
 # Install Poetry
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true \
   POETRY_VIRTUALENVS_CREATE=true
 RUN python --version \
-  && pip install poetry==1.5.1 \
+  && pip install poetry=={{ .Python.Poetry.Version }} \
   && poetry --version
-
+{{ end }}
 
 ##################
-# Base Layer
+# Builder Layer
 ##################
 FROM base as builder
 ARG ARTIFACTORY_PYPI_USERNAME
@@ -85,26 +98,38 @@ ARG ARTIFACTORY_PYPI_PASSWORD
 
 ENV POETRY_HTTP_BASIC_SHIPT_RESOLVE_USERNAME=$ARTIFACTORY_PYPI_USERNAME \
   POETRY_HTTP_BASIC_SHIPT_RESOLVE_PASSWORD=$ARTIFACTORY_PYPI_PASSWORD \
-  PROJECT_HOME=/opt/receipt_ocr
+  PROJECT_HOME=/opt/{{ .ProjectName }}
 
 WORKDIR ${PROJECT_HOME}
 
-COPY pyproject.toml pyproject.toml
-COPY poetry.lock poetry.lock
+{{ range .Resources.Config -}}
+COPY {{ . }} {{ . }}
+{{ end }}
 
+{{- if .Python.Poetry }}
 RUN poetry install --only main --no-root
-COPY resources resources
-COPY app app
+{{ end -}}
 
+{{ range .Resources.Project -}}
+COPY {{ . }} {{ . }}
+{{ end }}
+
+{{- if .Python.Poetry }}
 RUN poetry install --only main
-
+{{ end }}
 
 ##################
 # Dev Layer
 ##################
 FROM builder as dev
-RUN poetry install
 
+{{- if .Python.Poetry }}
+RUN poetry install
+{{ end }}
+
+{{ range .Resources.Test -}}
+COPY {{ . }} {{ . }}
+{{ end }}
 
 ##################
 # Prod Layer
@@ -112,8 +137,8 @@ RUN poetry install
 FROM base as prod
 
 ENV PROMETHEUS_MULTIPROC_DIR=/tmp \
-  PROJECT_HOME=/opt/receipt_ocr \
-  PROJECT_PYTHONPATH=${PROJECT_HOME}/.venv/lib/python3.10/site-packages \
+  PROJECT_HOME=/opt/{{ .ProjectName }} \
+  PROJECT_PYTHONPATH=${PROJECT_HOME}/.venv/lib/python{{ getShortPythonVersion .Python.Version }}/site-packages \
   PROJECT_VENV_BIN=${PROJECT_HOME}/.venv/bin \
   # prefix the venv bin to the path
   PATH=${PROJECT_VENV_BIN}${PATH:+":$PATH"} \
@@ -124,6 +149,6 @@ ENV PROMETHEUS_MULTIPROC_DIR=/tmp \
 
 WORKDIR ${PROJECT_HOME}
 
-COPY --from=builder ${PROJECT_HOME}/resources ${PROJECT_HOME}/resources
-COPY --from=builder ${PROJECT_HOME}/app ${PROJECT_HOME}/app
-
+{{ range .Resources.Project -}}
+COPY --from=builder ${PROJECT_HOME}/{{ . }} ${PROJECT_HOME}/{{ . }}
+{{ end }}

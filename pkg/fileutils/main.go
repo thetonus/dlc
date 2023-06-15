@@ -1,6 +1,7 @@
 package fileutils
 
 import (
+	"bufio"
 	"io"
 	"os"
 )
@@ -13,4 +14,14 @@ func ReadFile(path string) ([]byte, error) {
 	}
 	// Handle normal files
 	return os.ReadFile(path)
+}
+
+func WriteFile(f io.Writer, content []byte) error {
+	writer := bufio.NewWriter(f)
+	_, err := writer.Write(content)
+	defer writer.Flush()
+	if err != nil {
+		return err
+	}
+	return nil
 }

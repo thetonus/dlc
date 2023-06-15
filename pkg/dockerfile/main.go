@@ -1,77 +1,48 @@
 package dockerfile
 
 import (
-	"bufio"
-	"fmt"
-	"io"
+	"bytes"
+	_ "embed"
 	"os"
 	"strings"
+	"text/template"
 
-	"github.com/hammacktony/dlc/pkg/container"
+	"github.com/hammacktony/dlc/pkg/fileutils"
+	"github.com/hammacktony/dlc/pkg/spec"
 )
 
-// TODO: Use runes for tabs and new lines (maybe for Dockerfile keywords)
-
-const (
-	ubuntuVersion   = "22.04"
-	ubuntuBaseImage = "ubuntu:%s"
-	nvidiaBaseImage = "nvidia/cuda:%s-runtime-ubuntu%s"
-)
-
-func baseImage(dockerFile *strings.Builder, spec *container.ContainerSpec) {
-	if spec.Cuda.Enabled == true {
-		dockerFile.WriteString(fmt.Sprintf("FROM "+nvidiaBaseImage+" AS base\n", spec.Cuda.Version, ubuntuVersion))
-	} else {
-		dockerFile.WriteString(fmt.Sprintf("FROM "+ubuntuBaseImage+" AS base\n", ubuntuVersion))
-	}
-}
-
-func installSystemPackages(dockerFile *strings.Builder, spec *container.ContainerSpec) {
-	var installerSteps strings.Builder
-
-	installerSteps.WriteString("RUN apt-get update \\" + "\n")
-	installerSteps.WriteString("\t&& apt-install -y --no-install-recommends \\\n")
-
-	for _, pkg := range spec.SystemPackages {
-		installerSteps.WriteString("\t" + pkg + " \\\n")
-	}
-
-	installerSteps.WriteString("\t&& rm -rf /var/lib/apt/lists/*\n")
-	dockerFile.WriteString(installerSteps.String())
-}
+//go:embed Dockerfile.tmpl
+var dockerfileTmpl string
 
 // Create dockerfile from spec
-func Create(spec *container.ContainerSpec) string {
-	var dockerFile strings.Builder
-
-	baseImage(&dockerFile, spec)
-	installSystemPackages(&dockerFile, spec)
-
-	if spec.Workdir != nil {
-		fmt.Printf("WORKDIR %s\n", *spec.Workdir)
-	}
-	for _, item := range spec.Python.ConfigSource {
-		dockerFile.WriteString("COPY " + item + " " + item + "\n")
-	}
-
-	return dockerFile.String()
-}
-
-func writeFile(f io.Writer, content string) error {
-	writer := bufio.NewWriter(f)
-	_, err := writer.WriteString(content)
-	defer writer.Flush()
+func Create(spec *spec.Config) ([]byte, error) {
+	t, err := template.New("Dockerfile.tmpl").Funcs(template.FuncMap{
+		"getShortPythonVersion": func(version string) string {
+			slice := strings.Split(version, ".")
+			if len(slice) < 3 {
+				return version
+			}
+			return strings.Join(slice[:2], ".")
+		},
+	}).Parse(dockerfileTmpl)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+
+	var bytes bytes.Buffer
+	err = t.Execute(&bytes, spec)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes.Bytes(), nil
 }
 
 // Write dockerfile to file
-func WriteFile(path string, content string) error {
+func WriteFile(path string, content []byte) error {
 	// Output to stdout
 	if path == "-" || path == "/dev/stdout" {
-		return writeFile(os.Stdout, content)
+		return fileutils.WriteFile(os.Stdout, content)
 	}
 	// Output to file
 	f, err := os.Create(path)
@@ -80,5 +51,5 @@ func WriteFile(path string, content string) error {
 		return err
 	}
 
-	return writeFile(f, content)
+	return fileutils.WriteFile(f, content)
 }

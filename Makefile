@@ -20,3 +20,8 @@ clean: ## Clean stuff
 
 format: ## Format
 	go fmt ./...
+
+dev/install: build ## Install dlc locally
+	rm -rf ~/.local/bin/dlc
+	cp dist/dlc ~/.local/bin/
+	chmod u+x ~/.local/bin/dlc
