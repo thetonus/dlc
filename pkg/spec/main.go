@@ -12,8 +12,8 @@ type SystemConfig struct {
 }
 
 type CudaConfig struct {
-	Enabled bool   `mapstructure:"enabled" yaml:"enabled"`
-	Version string `mapstructure:"version" yaml:"version"`
+	Enabled bool    `mapstructure:"enabled" yaml:"enabled"`
+	Version *string `mapstructure:"version" yaml:"version"`
 }
 
 type PoetryConfig struct {
@@ -60,7 +60,7 @@ func SetDefaults(config *Config) {
 	}
 
 	if config.Cuda == nil {
-		config.Cuda = &CudaConfig{Enabled: cudaEnabled, Version: cudaVersion}
+		config.Cuda = &CudaConfig{Enabled: cudaEnabled, Version: nil}
 	}
 
 	// Default python package manager is poetry at the moment
@@ -74,6 +74,10 @@ func SetDefaults(config *Config) {
 
 	if config.System.MambaVersion == nil {
 		config.System.MambaVersion = toPtr(mambaVersion)
+	}
+
+	if config.Cuda.Enabled == true && config.Cuda.Version == nil {
+		config.Cuda.Version = toPtr(cudaVersion)
 	}
 }
 
@@ -94,4 +98,29 @@ func LoadConfig(path string) (*Config, error) {
 	SetDefaults(&config)
 
 	return &config, nil
+}
+
+// GenerateConfig generates an example config file
+func GenerateConfig(useCuda bool) *Config {
+	config := Config{
+		ProjectName: "example_project",
+		Resources: ResourcesConfig{
+			Config:  []string{"pyproject.toml", "poetry.lock"},
+			Test:    []string{"test"},
+			Project: []string{"example_project", "app"},
+		},
+		Python: PythonConfig{
+			Version: "3.10.11",
+		},
+		System: &SystemConfig{
+			Packages: []string{"ca-certificates", "tzdata"},
+		},
+	}
+
+	if useCuda == true {
+		config.Cuda = &CudaConfig{Enabled: true, Version: toPtr(cudaVersion)}
+	}
+
+	SetDefaults(&config)
+	return &config
 }

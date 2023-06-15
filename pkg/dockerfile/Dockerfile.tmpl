@@ -28,7 +28,6 @@ RUN /tmp/mambaforge.sh -b -p /opt/conda
 ##################
 FROM nvidia/cuda:{{.Cuda.Version}}-runtime-ubuntu{{ .System.UbuntuVersion }} as base
 {{else -}}
-# CPU Base
 ##################
 # Base Layer - CPU
 ##################
