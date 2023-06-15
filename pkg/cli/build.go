@@ -36,6 +36,6 @@ func BuildCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&exportFile, "export", "", "File to export dockerfile to")
+	cmd.Flags().StringVar(&exportFile, "export", "-", "File to export dockerfile to (Default: stdout)")
 	return cmd
 }
