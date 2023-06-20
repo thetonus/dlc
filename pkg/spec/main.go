@@ -6,37 +6,37 @@ import (
 )
 
 type SystemConfig struct {
-	UbuntuVersion *string  `mapstructure:"ubuntu_version" yaml:"ubuntu_version"`
-	MambaVersion  *string  `mapstructure:"mamba_version" yaml:"mamba_version"`
-	Packages      []string `mapstructure:"packages" yaml:"packages"`
+	UbuntuVersion *string  `yaml:"ubuntu_version"`
+	MambaVersion  *string  `yaml:"mamba_version"`
+	Packages      []string `yaml:"packages"`
 }
 
 type CudaConfig struct {
-	Enabled bool    `mapstructure:"enabled" yaml:"enabled"`
-	Version *string `mapstructure:"version" yaml:"version"`
+	Enabled bool    `yaml:"enabled"`
+	Version *string `yaml:"version"`
 }
 
 type PoetryConfig struct {
-	Version string `mapstructure:"version" yaml:"version"`
+	Version string `yaml:"version"`
 }
 
 type PythonConfig struct {
-	Version string        `mapstructure:"version" yaml:"version"`
-	Poetry  *PoetryConfig `mapstructure:"poetry" yaml:"poetry"`
+	Version string        `yaml:"version"`
+	Poetry  *PoetryConfig `yaml:"poetry"`
 }
 
 type ResourcesConfig struct {
-	Config  []string `mapstructure:"config" yaml:"config"`
-	Test    []string `mapstructure:"test" yaml:"test"`
-	Project []string `mapstructure:"project" yaml:"project"`
+	Config  []string `yaml:"config"`
+	Test    []string `yaml:"test"`
+	Project []string `yaml:"project"`
 }
 
 type Config struct {
-	ProjectName string          `mapstructure:"project_name" yaml:"project_name"`
-	System      *SystemConfig   `mapstructure:"system" yaml:"system"`
-	Cuda        *CudaConfig     `mapstructure:"cuda" yaml:"cuda"`
-	Python      PythonConfig    `mapstructure:"python" yaml:"python"`
-	Resources   ResourcesConfig `mapstructure:"resources" yaml:"resources"`
+	ProjectName string          `yaml:"project_name"`
+	System      *SystemConfig   `yaml:"system"`
+	Cuda        *CudaConfig     `yaml:"cuda"`
+	Python      PythonConfig    `yaml:"python"`
+	Resources   ResourcesConfig `yaml:"resources"`
 }
 
 // Given any type, return a reference to it.
