@@ -20,7 +20,8 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	rootCmd.AddCommand(BuildCmd())
 	rootCmd.AddCommand(ShowCmd())
-	rootCmd.AddCommand(GenerateCommand())
+	rootCmd.AddCommand(GenerateCmd())
+	rootCmd.AddCommand(ValidateCmd())
 	if err := rootCmd.Execute(); err != nil {
 		zap.L().Error("Error executing command", zap.Error(err))
 		os.Exit(1)

@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func GenerateCommand() *cobra.Command {
+func GenerateCmd() *cobra.Command {
 	var useCuda bool
 
 	cmd := &cobra.Command{

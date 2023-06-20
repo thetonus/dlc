@@ -124,3 +124,9 @@ func GenerateConfig(useCuda bool) *Config {
 	SetDefaults(&config)
 	return &config
 }
+
+// Validates configuration
+func ValidateConfig(path string) error {
+	_, err := LoadConfig(path)
+	return err
+}
