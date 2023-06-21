@@ -18,18 +18,18 @@ func ShowCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			config, err := spec.LoadConfig(args[0])
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 
 			content, err := yaml.Marshal(config)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 
 			if err := fileutils.WriteFile(os.Stdout, content); err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 		},

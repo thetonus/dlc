@@ -19,18 +19,18 @@ func BuildCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			containerSpec, err := spec.LoadConfig(args[0])
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 
 			content, err := dockerfile.Create(containerSpec)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 
 			if err := dockerfile.WriteFile(exportFile, content); err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 		},

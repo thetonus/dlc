@@ -20,12 +20,12 @@ func GenerateCmd() *cobra.Command {
 			config := spec.GenerateConfig(useCuda)
 			content, err := yaml.Marshal(config)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 
 			if err := fileutils.WriteFile(os.Stdout, content); err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 		},
