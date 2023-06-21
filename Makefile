@@ -14,9 +14,9 @@ help:  ## Show help messages for make targets
 .PHONY: mod
 mod: ## Go mod things
 	$(GO) mod tidy
-	$(GO) mod vendor
-	$(GO) mod download
+	$(GO) mod verify
 
+.PHONY: build
 build: clean ## Build app
 	$(eval DLC_VERSION ?= $(shell git describe --tags --match 'v*' --abbrev=0)+dev)
 	$(eval DLC_COMMIT ?= $(shell git rev-parse --short HEAD))
@@ -26,17 +26,21 @@ build: clean ## Build app
 		-ldflags "-X $(PACKAGE_NAMESPACE)/pkg/global.Version=$(DLC_VERSION) -X $(PACKAGE_NAMESPACE)/pkg/global.Commit=$(DLC_COMMIT) -X $(PACKAGE_NAMESPACE)/pkg/global.BuildTime=$(shell date +%Y-%m-%dT%H:%M:%S%z) -w" \
 		-o dist/${BINARY_NAME} cmd/main.go
 
+.PHONY: clean
 clean: ## Clean stuff
 	$(GO) clean
 	rm -rf dist/*
 
+.PHONY: format
 format: ## Format
 	$(GO) fmt ./...
 
-vet:
+.PHONY: vet
+vet:  ## Vet code
 	$(GO) vet ./...
 
-dev/install: build ## Install dlc locally
+.PHONY: dev/install
+dev/install: build  ## Install dlc locally
 	rm -rf ~/.local/bin/dlc
 	cp dist/dlc ~/.local/bin/
 	chmod u+x ~/.local/bin/dlc
