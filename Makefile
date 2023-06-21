@@ -1,4 +1,9 @@
-BINARY_NAME=dlc
+SHELL := /bin/bash
+BINARY_NAME := dlc
+PACKAGE_NAMESPACE := github.com/hammacktony/dlc
+GO := go
+CGO := 0
+GO111MODULE := on
 
 all: help
 
@@ -8,18 +13,28 @@ help:  ## Show help messages for make targets
 
 .PHONY: mod
 mod: ## Go mod things
-	go mod tidy
-	go mod vendor
-	go mod download
+	$(GO) mod tidy
+	$(GO) mod vendor
+	$(GO) mod download
 
 build: clean ## Build app
-	CGO=0 go build -o dist/${BINARY_NAME} cmd/main.go
+	$(eval DLC_VERSION ?= $(shell git describe --tags --match 'v*' --abbrev=0)+dev)
+	$(eval DLC_COMMIT ?= $(shell git rev-parse --short HEAD))
+
+	CGO=$(CGO) GO111MODULE=$(GO111MODULE) $(GO) \
+		build \
+		-ldflags "-X $(PACKAGE_NAMESPACE)/pkg/global.Version=$(DLC_VERSION) -X $(PACKAGE_NAMESPACE)/pkg/global.Commit=$(DLC_COMMIT) -X $(PACKAGE_NAMESPACE)/pkg/global.BuildTime=$(shell date +%Y-%m-%dT%H:%M:%S%z) -w" \
+		-o dist/${BINARY_NAME} cmd/main.go
 
 clean: ## Clean stuff
+	$(GO) clean
 	rm -rf dist/*
 
 format: ## Format
-	go fmt ./...
+	$(GO) fmt ./...
+
+vet:
+	$(GO) vet ./...
 
 dev/install: build ## Install dlc locally
 	rm -rf ~/.local/bin/dlc
