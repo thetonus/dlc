@@ -1,6 +1,9 @@
 package spec
 
 import (
+	"bytes"
+
+	"github.com/go-playground/validator/v10"
 	"github.com/goccy/go-yaml"
 	"github.com/hammacktony/dlc/pkg/fileutils"
 )
@@ -21,8 +24,9 @@ type PoetryConfig struct {
 }
 
 type PythonConfig struct {
-	Version string        `yaml:"version"`
-	Poetry  *PoetryConfig `yaml:"poetry"`
+	Version string `yaml:"version" validate:"required"`
+	// Conda or other Python package managers may be exposed later
+	Poetry *PoetryConfig `yaml:"poetry" validate:"required"`
 }
 
 type ResourcesConfig struct {
@@ -32,11 +36,11 @@ type ResourcesConfig struct {
 }
 
 type Config struct {
-	ProjectName string          `yaml:"project_name"`
+	ProjectName string          `yaml:"project_name" validate:"required"`
 	System      *SystemConfig   `yaml:"system"`
 	Cuda        *CudaConfig     `yaml:"cuda"`
-	Python      PythonConfig    `yaml:"python"`
-	Resources   ResourcesConfig `yaml:"resources"`
+	Python      PythonConfig    `yaml:"python" validate:"required"`
+	Resources   ResourcesConfig `yaml:"resources" validate:"required"`
 }
 
 // Given any type, return a reference to it.
@@ -85,12 +89,18 @@ func SetDefaults(config *Config) {
 func LoadConfig(path string) (*Config, error) {
 	var config Config
 
-	bytes, err := fileutils.ReadFile(path)
+	retval, err := fileutils.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := yaml.Unmarshal(bytes, &config); err != nil {
+	dec := yaml.NewDecoder(
+		bytes.NewReader(retval),
+		yaml.Validator(validator.New()),
+		yaml.Strict(),
+	)
+
+	if err := dec.Decode(&config); err != nil {
 		return nil, err
 	}
 
@@ -121,6 +131,7 @@ func GenerateConfig(useCuda bool) *Config {
 		config.Cuda = &CudaConfig{Enabled: true, Version: toPtr(cudaVersion)}
 	}
 
+	// Set default values
 	SetDefaults(&config)
 	return &config
 }

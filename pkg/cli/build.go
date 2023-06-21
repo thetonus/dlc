@@ -1,12 +1,12 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/hammacktony/dlc/pkg/dockerfile"
 	"github.com/hammacktony/dlc/pkg/spec"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 func BuildCmd() *cobra.Command {
@@ -19,18 +19,18 @@ func BuildCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			containerSpec, err := spec.LoadConfig(args[0])
 			if err != nil {
-				zap.L().Error("failed to load container spec", zap.Error(err))
+				fmt.Println(err)
 				os.Exit(1)
 			}
 
 			content, err := dockerfile.Create(containerSpec)
 			if err != nil {
-				zap.L().Error("failed to generate dockerfile", zap.Error(err))
+				fmt.Println(err)
 				os.Exit(1)
 			}
 
 			if err := dockerfile.WriteFile(exportFile, content); err != nil {
-				zap.L().Error("failed to export dockerfile", zap.Error(err))
+				fmt.Println(err)
 				os.Exit(1)
 			}
 		},
